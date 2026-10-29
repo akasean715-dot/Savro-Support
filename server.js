@@ -7,7 +7,12 @@ if(!process.env.DB_HOST||!process.env.DB_USER||!process.env.DB_NAME)throw Error(
 if(!process.env.ADMIN_EMAIL||!process.env.ADMIN_PASSWORD||process.env.ADMIN_PASSWORD.length<12)throw Error("Set ADMIN_EMAIL and ADMIN_PASSWORD (12+ chars)");
 const db=mysql.createPool({host:process.env.DB_HOST,port:+(process.env.DB_PORT||3306),user:process.env.DB_USER,password:process.env.DB_PASSWORD,database:process.env.DB_NAME,waitForConnections:true,connectionLimit:5,ssl: process.env.DB_SSL === "true"
   ? {
-      ca: fs.readFileSync(path.join(__dirname, "ca.pem"), "utf8"),
+      ca: fs.readFileSync(
+  process.env.RENDER
+    ? "/etc/secrets/ca.pem"
+    : path.join(__dirname, "ca.pem"),
+  "utf8"
+),
       rejectUnauthorized: true
     }
   : undefined,charset:"utf8mb4"});
