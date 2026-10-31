@@ -1,4 +1,4 @@
-const CACHE = "savro-admin-shell-v2";
+const CACHE = "savro-admin-shell-v3";
 const SHELL = ["/", "/admin", "/styles.css", "/app.js", "/admin-manifest.json",
   "/icons/admin-192.png", "/icons/admin-512.png", "/icons/admin-maskable-512.png"];
 
@@ -20,6 +20,14 @@ self.addEventListener("fetch", event => {
       if (res.ok) caches.open(CACHE).then(c => c.put(req, res.clone()));
       return res;
     }).catch(() => caches.match(req).then(hit => hit || caches.match("/"))));
+    return;
+  }
+  const isScript = /\\.js(?:$|\\?)/i.test(url.pathname);
+  if (isScript) {
+    event.respondWith(fetch(req).then(res => {
+      if (res.ok) caches.open(CACHE).then(c => c.put(req, res.clone()));
+      return res;
+    }).catch(() => caches.match(req)));
     return;
   }
   event.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
