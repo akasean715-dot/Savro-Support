@@ -1,44 +1,29 @@
-const CACHE_NAME = "savro-admin-shell-v1";
+const CACHE = "savro-admin-shell-v2";
 const SHELL = ["/", "/admin", "/styles.css", "/app.js", "/admin-manifest.json",
   "/icons/admin-192.png", "/icons/admin-512.png", "/icons/admin-maskable-512.png"];
 
 self.addEventListener("install", event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });
-
 self.addEventListener("activate", event => {
   event.waitUntil(caches.keys().then(keys => Promise.all(
-    keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+    keys.filter(key => key !== CACHE).map(key => caches.delete(key))
   )).then(() => self.clients.claim()));
 });
-
 self.addEventListener("fetch", event => {
-  const request = event.request;
-  const url = new URL(request.url);
-  if (request.method !== "GET" || url.origin !== self.location.origin) return;
-
-  // Never cache API responses, login requests, tickets, or private customer data.
+  const req = event.request, url = new URL(req.url);
+  if (req.method !== "GET" || url.origin !== self.location.origin) return;
+  // Never cache authentication, ticket APIs, messages, or customer information.
   if (url.pathname.startsWith("/api/")) return;
-
-  if (request.mode === "navigate") {
-    event.respondWith(fetch(request).then(response => {
-      if (response.ok) {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-      }
-      return response;
-    }).catch(() => caches.match(request).then(cached => cached || caches.match("/"))));
+  if (req.mode === "navigate") {
+    event.respondWith(fetch(req).then(res => {
+      if (res.ok) caches.open(CACHE).then(c => c.put(req, res.clone()));
+      return res;
+    }).catch(() => caches.match(req).then(hit => hit || caches.match("/"))));
     return;
   }
-
-  event.respondWith(caches.match(request).then(cached => {
-    const fresh = fetch(request).then(response => {
-      if (response.ok) {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(request, copy));
-      }
-      return response;
-    }).catch(() => cached);
-    return cached || fresh;
-  }));
+  event.respondWith(caches.match(req).then(hit => hit || fetch(req).then(res => {
+    if (res.ok) caches.open(CACHE).then(c => c.put(req, res.clone()));
+    return res;
+  })));
 });

@@ -2,7 +2,7 @@
   "id": "/admin",
   "name": "Savro Support Admin",
   "short_name": "Savro Admin",
-  "description": "Private workspace for managing Savro customer support tickets.",
+  "description": "Private admin inbox for managing Savro customer support.",
   "start_url": "/admin",
   "scope": "/",
   "display": "standalone",
@@ -35,7 +35,7 @@
   ],
   "shortcuts": [
     {
-      "name": "Support inbox",
+      "name": "Admin inbox",
       "short_name": "Inbox",
       "url": "/admin"
     }

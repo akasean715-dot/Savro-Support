@@ -20,11 +20,12 @@ async function openCustomer(code,token){S.customerCode=code;S.customerToken=toke
 async function loadCustomer(){try{let d=await api("/api/tickets/"+S.customerCode,{headers:{"X-Ticket-Access":S.customerToken}});$("#trackTitle").textContent=d.ticket.ticketCode+" — "+d.ticket.subject;$("#trackMeta").textContent="Status: "+d.ticket.status+" · Updated "+date(d.ticket.updatedAt);$("#trackMessages").innerHTML=d.messages.map(m=>`<article class="message ${m.sender_type==="admin"?"admin":""}"><div class="messagehead">${esc(m.sender_name)} · ${m.sender_type==="admin"?"Savro Support":"You"} <time>${date(m.created_at)}</time></div><div class="messagebody">${esc(m.body)}</div></article>`).join("");$("#customerReply").classList.toggle("hidden",d.ticket.status==="resolved")}catch(e){$("#trackMessages").textContent=e.message}}
 $("#customerReply").onsubmit=async e=>{e.preventDefault();let ta=e.currentTarget.querySelector("textarea");try{await api("/api/tickets/"+S.customerCode+"/messages",{method:"POST",headers:{"X-Ticket-Access":S.customerToken},body:JSON.stringify({message:ta.value})});ta.value="";await loadCustomer();$("#replyStatus").textContent="Reply sent"}catch(err){$("#replyStatus").textContent=err.message}};
 function route(){
-  const directAdmin = location.pathname.replace(/\\/+$/, "") === "/admin";
-  const h=location.hash.slice(1);
-  const target = directAdmin ? "admin" : (["admin","ticket"].includes(h)?h:"home");
+  const path = location.pathname.replace(/\\/+$/, "") || "/";
+  const hash = location.hash.slice(1);
+  // The installed admin app starts at /admin and opens the existing private admin view.
+  const target = path === "/admin" ? "admin" : (["admin","ticket"].includes(hash) ? hash : "home");
   view(target);
 }
-window.addEventListener("hashchange",route);
-window.addEventListener("popstate",route);
+window.addEventListener("hashchange", route);
+window.addEventListener("popstate", route);
 route();
