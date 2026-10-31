@@ -4,7 +4,7 @@ const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const date=s=>s?new Date(s).toLocaleString([], {dateStyle:"medium",timeStyle:"short"}):"";
 async function api(url,opt={}){let h={"Content-Type":"application/json",...(opt.headers||{})};if(S.token)h.Authorization="Bearer "+S.token;let r=await fetch(url,{...opt,headers:h}),d={};try{d=await r.json()}catch{}if(!r.ok)throw Error(d.error||"Request failed");return d}
 function toast(s){let t=$("#toast");t.textContent=s;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),3000)}
-function view(n){document.body.classList.toggle("admin-mode",n==="admin");$$(".view").forEach(x=>x.classList.add("hidden"));$("#"+n+"View").classList.remove("hidden");if(n==="home")loadFaq();if(n==="admin")initAdmin();window.scrollTo(0,0)}
+function view(n){$$(".view").forEach(x=>x.classList.add("hidden"));$("#"+n+"View").classList.remove("hidden");if(n==="home")loadFaq();if(n==="admin")initAdmin();window.scrollTo(0,0)}
 $$("[data-view]").forEach(b=>b.onclick=e=>{e.preventDefault();view(b.dataset.view);history.replaceState(null,"",b.dataset.view==="home"?"/":"#"+b.dataset.view)});
 async function loadFaq(){try{S.faq=(await api("/api/faq")).items;let cats=[...new Set(S.faq.map(x=>x.category))];$("#categories").innerHTML=cats.map(c=>`<button class="cat" data-cat="${esc(c)}"><i>✦</i><span><strong>${esc(c)}</strong>${S.faq.filter(x=>x.category===c).length} helpful articles</span></button>`).join("");$$("[data-cat]").forEach(b=>b.onclick=()=>{$("#faqSearch").value=b.dataset.cat;renderFaq()});renderFaq()}catch{$("#faqList").textContent="Help articles are temporarily unavailable."}}
 function renderFaq(){let q=$("#faqSearch").value.toLowerCase(),items=S.faq.filter(x=>(x.question+" "+x.answer+" "+x.category).toLowerCase().includes(q));$("#faqList").innerHTML=items.map(x=>`<article class="faq"><button class="question"><span>${esc(x.question)}</span><b>+</b></button><div class="answer hidden">${esc(x.answer)}</div></article>`).join("");$("#noFaq").classList.toggle("hidden",!!items.length);$$(".question").forEach(b=>b.onclick=()=>{let a=b.nextElementSibling;a.classList.toggle("hidden");b.lastElementChild.textContent=a.classList.contains("hidden")?"+":"−"})}
@@ -19,13 +19,4 @@ async function openAdmin(id){S.selected=Number(id);try{let d=await api("/api/adm
 async function openCustomer(code,token){S.customerCode=code;S.customerToken=token;view("track");await loadCustomer()}
 async function loadCustomer(){try{let d=await api("/api/tickets/"+S.customerCode,{headers:{"X-Ticket-Access":S.customerToken}});$("#trackTitle").textContent=d.ticket.ticketCode+" — "+d.ticket.subject;$("#trackMeta").textContent="Status: "+d.ticket.status+" · Updated "+date(d.ticket.updatedAt);$("#trackMessages").innerHTML=d.messages.map(m=>`<article class="message ${m.sender_type==="admin"?"admin":""}"><div class="messagehead">${esc(m.sender_name)} · ${m.sender_type==="admin"?"Savro Support":"You"} <time>${date(m.created_at)}</time></div><div class="messagebody">${esc(m.body)}</div></article>`).join("");$("#customerReply").classList.toggle("hidden",d.ticket.status==="resolved")}catch(e){$("#trackMessages").textContent=e.message}}
 $("#customerReply").onsubmit=async e=>{e.preventDefault();let ta=e.currentTarget.querySelector("textarea");try{await api("/api/tickets/"+S.customerCode+"/messages",{method:"POST",headers:{"X-Ticket-Access":S.customerToken},body:JSON.stringify({message:ta.value})});ta.value="";await loadCustomer();$("#replyStatus").textContent="Reply sent"}catch(err){$("#replyStatus").textContent=err.message}};
-function route(){
-  const path = location.pathname.replace(/\/+$/, "") || "/";
-  const hash = location.hash.slice(1);
-  // The installed admin app starts at /admin and opens the existing private admin view.
-  const target = path === "/admin" ? "admin" : (["admin","ticket"].includes(hash) ? hash : "home");
-  view(target);
-}
-window.addEventListener("hashchange", route);
-window.addEventListener("popstate", route);
-route();
+function route(){let h=location.hash.slice(1);view(["admin","ticket"].includes(h)?h:"home")}window.addEventListener("hashchange",route);route();
